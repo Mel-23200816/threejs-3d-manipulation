@@ -91,7 +91,13 @@ function init() {
 
     window.addEventListener("resize", onWindowResize);
 
-    const gui = new GUI();
+    const gui = new GUI({ container: document.getElementById('container-map') });
+
+    // Forzamos su posición para que se mantenga en la esquina superior derecha de su contenedor
+    gui.domElement.style.position = 'absolute';
+    gui.domElement.style.top = '10px';
+    gui.domElement.style.right = '10px';
+    
     gui.add(controls, "zoomToCursor");
     gui.add(controls, "screenSpacePanning");
 }
