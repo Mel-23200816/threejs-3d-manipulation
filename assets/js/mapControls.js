@@ -217,7 +217,7 @@ function init() {
     // -- GUI --
     const gui = new GUI({ container: document.getElementById('container-map') });
     gui.domElement.style.position = 'absolute';
-    gui.domElement.style.top = '10px';
+    gui.domElement.style.top = '80px'; // Ajustado por debajo de la Navbar
     gui.domElement.style.right = '10px';
     
     gui.add(controls, "zoomToCursor");

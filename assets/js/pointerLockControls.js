@@ -41,7 +41,7 @@ function init() {
     // -- INTERFAZ HUD --
     hud = document.createElement('div');
     hud.style.position = 'absolute';
-    hud.style.top = '20px';
+    hud.style.top = '80px'; // Ajustado por debajo de la Navbar
     hud.style.left = '20px';
     hud.style.color = '#333';
     hud.style.fontSize = '24px';

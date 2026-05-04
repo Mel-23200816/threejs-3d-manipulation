@@ -2,14 +2,14 @@ import * as THREE from 'three';
 
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'; // Para reflejos realistas
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
 let cameraPersp, cameraOrtho, currentCamera;
 let scene, renderer, control, orbit;
 
 // Variables para el sistema interactivo
 let raycaster, mouse;
-const objects = []; // Aquí guardaremos todo lo que se puede seleccionar
+const objects = []; 
 
 // Variables para la luz interactiva
 let spotLight, lightHandle, spotLightHelper;
@@ -21,7 +21,7 @@ function init() {
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.shadowMap.enabled = true; // Habilitar sombras
+    renderer.shadowMap.enabled = true; 
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     document.getElementById('container-transform').appendChild(renderer.domElement);
@@ -36,15 +36,13 @@ function init() {
     currentCamera.position.set(5, 4, 8);
 
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x222222); // Fondo oscuro para resaltar la iluminación
+    scene.background = new THREE.Color(0x222222); 
 
-    // -- ENTORNO DE REFLEJOS REALISTAS (Para el oro y el cristal) --
     const pmremGenerator = new THREE.PMREMGenerator(renderer);
     scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
 
     scene.add(new THREE.GridHelper(10, 20, 0x888888, 0x444444));
 
-    // Suelo receptor de sombras
     const floor = new THREE.Mesh(
         new THREE.PlaneGeometry(20, 20),
         new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 1 })
@@ -54,15 +52,8 @@ function init() {
     scene.add(floor);
 
     // -- 1. LABORATORIO DE MATERIALES FÍSICOS --
-
-    // A. Esfera de Cristal Refractante
     const glassMaterial = new THREE.MeshPhysicalMaterial({
-        color: 0xffffff,
-        metalness: 0,
-        roughness: 0.05,
-        transmission: 1, // Hace que parezca cristal
-        thickness: 0.5,
-        ior: 1.5 // Índice de refracción
+        color: 0xffffff, metalness: 0, roughness: 0.05, transmission: 1, thickness: 0.5, ior: 1.5
     });
     const sphere = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 32), glassMaterial);
     sphere.position.set(-2.5, 1, 0);
@@ -70,11 +61,8 @@ function init() {
     scene.add(sphere);
     objects.push(sphere);
 
-    // B. Toroide de Oro Metálico
     const goldMaterial = new THREE.MeshStandardMaterial({
-        color: 0xffd700,
-        metalness: 1,
-        roughness: 0.15
+        color: 0xffd700, metalness: 1, roughness: 0.15
     });
     const torus = new THREE.Mesh(new THREE.TorusGeometry(0.8, 0.3, 32, 64), goldMaterial);
     torus.position.set(2.5, 1, 0);
@@ -82,11 +70,8 @@ function init() {
     scene.add(torus);
     objects.push(torus);
 
-    // C. Cilindro de Plástico Mate
     const plasticMaterial = new THREE.MeshStandardMaterial({
-        color: 0xff3366,
-        metalness: 0,
-        roughness: 0.8
+        color: 0xff3366, metalness: 0, roughness: 0.8
     });
     const cylinder = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 2, 32), plasticMaterial);
     cylinder.position.set(0, 1, 0);
@@ -95,66 +80,109 @@ function init() {
     objects.push(cylinder);
 
     // -- 2. MANIPULACIÓN DE LUCES EN TIEMPO REAL --
-    
-    // Luz ambiental base para que no sea totalmente negro
     scene.add(new THREE.AmbientLight(0xffffff, 0.2));
 
-    // Reflector principal
     spotLight = new THREE.SpotLight(0xffffff, 150);
     spotLight.angle = Math.PI / 6;
     spotLight.penumbra = 0.3;
     spotLight.castShadow = true;
     scene.add(spotLight);
 
-    // Objeto físico (una pequeña estructura de alambre) para poder hacerle clic y mover la luz
     lightHandle = new THREE.Mesh(
         new THREE.OctahedronGeometry(0.3),
         new THREE.MeshBasicMaterial({ color: 0xffff00, wireframe: true })
     );
     lightHandle.position.set(0, 5, 4);
     scene.add(lightHandle);
-    objects.push(lightHandle); // Permitir que sea seleccionable
+    objects.push(lightHandle); 
 
-    // Ayudante visual que dibuja el cono de luz
     spotLightHelper = new THREE.SpotLightHelper(spotLight);
     scene.add(spotLightHelper);
 
 
-    // -- CONTROLES --
+    // -- 3. CONTROLES Y COLISIONES AABB --
     orbit = new OrbitControls(currentCamera, renderer.domElement);
     orbit.update();
     orbit.addEventListener('change', render);
 
     control = new TransformControls(currentCamera, renderer.domElement);
     control.addEventListener('change', render);
+    
+    // Al empezar a arrastrar, bloqueamos la cámara y guardamos los estados seguros
     control.addEventListener('dragging-changed', function (event) {
-        orbit.enabled = !event.value; // Desactiva la órbita al usar las flechas
+        orbit.enabled = !event.value;
+        if (event.value && control.object) {
+            control.object.userData.prevPosition = control.object.position.clone();
+            control.object.userData.prevScale = control.object.scale.clone();
+            control.object.userData.prevRotation = control.object.rotation.clone();
+        }
     });
+
+    // Detectar colisiones mientras se manipula el objeto
+    control.addEventListener('objectChange', function () {
+        const obj = control.object;
+        if (!obj) return;
+
+        obj.updateMatrixWorld();
+        const draggedBox = new THREE.Box3().setFromObject(obj);
+        let collision = false;
+
+        // Comparamos el objeto actual contra el resto de figuras
+        for (let i = 0; i < objects.length; i++) {
+            if (objects[i] !== obj) {
+                const otherBox = new THREE.Box3().setFromObject(objects[i]);
+                if (draggedBox.intersectsBox(otherBox)) {
+                    collision = true;
+                    break;
+                }
+            }
+        }
+
+        // También evitamos que crucen el suelo hacia abajo
+        if (draggedBox.min.y < 0) {
+            collision = true;
+        }
+
+        if (collision) {
+            // Si choca, revertimos a la última posición/tamaño seguro según la herramienta usada
+            if (control.mode === 'translate' && obj.userData.prevPosition) {
+                obj.position.copy(obj.userData.prevPosition);
+            } else if (control.mode === 'scale' && obj.userData.prevScale) {
+                obj.scale.copy(obj.userData.prevScale);
+            } else if (control.mode === 'rotate' && obj.userData.prevRotation) {
+                obj.rotation.copy(obj.userData.prevRotation);
+            }
+        } else {
+            // Si está libre, actualizamos la memoria de posición segura
+            if(!obj.userData.prevPosition) obj.userData.prevPosition = obj.position.clone();
+            else obj.userData.prevPosition.copy(obj.position);
+            
+            if(!obj.userData.prevScale) obj.userData.prevScale = obj.scale.clone();
+            else obj.userData.prevScale.copy(obj.scale);
+            
+            if(!obj.userData.prevRotation) obj.userData.prevRotation = obj.rotation.clone();
+            else obj.userData.prevRotation.copy(obj.rotation);
+        }
+    });
+
     scene.add(control.getHelper());
 
-    // -- 3. SISTEMA DE SELECCIÓN POR CLIC (RAYCASTER) --
+    // -- SISTEMA DE SELECCIÓN POR CLIC (RAYCASTER) --
     raycaster = new THREE.Raycaster();
     mouse = new THREE.Vector2();
 
     renderer.domElement.addEventListener('pointerdown', function(event) {
-        // PREVENCIÓN: Si el ratón está sobre el gizmo (las flechas), no hacemos nada
-        // Esto evita que al intentar arrastrar una flecha, se deseleccione el objeto
         if (control.axis !== null) return;
 
-        // Calcular coordenadas normalizadas del ratón
         mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
         mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
         raycaster.setFromCamera(mouse, currentCamera);
-
-        // Buscar colisiones solo con los objetos de nuestra lista
         const intersects = raycaster.intersectObjects(objects, false);
 
         if (intersects.length > 0) {
-            // Anclar el control al objeto clickeado
             control.attach(intersects[0].object);
         } else {
-            // Clic al vacío = deseleccionar
             control.detach();
         }
         render();
@@ -162,12 +190,9 @@ function init() {
 
     window.addEventListener('resize', onWindowResize);
 
-    // EVENTOS TECLADO ORIGINALES
     window.addEventListener('keydown', function (event) {
         switch (event.key) {
-            case 'q':
-                control.setSpace(control.space === 'local' ? 'world' : 'local');
-                break;
+            case 'q': control.setSpace(control.space === 'local' ? 'world' : 'local'); break;
             case 'Shift':
                 control.setTranslationSnap(1);
                 control.setRotationSnap(THREE.MathUtils.degToRad(15));
@@ -226,7 +251,6 @@ function onWindowResize() {
 }
 
 function render() {
-    // Si la "manija" de luz interactiva se mueve, actualizamos la posición del Spotlight real
     if (spotLight && lightHandle) {
         spotLight.position.copy(lightHandle.position);
         spotLightHelper.update();

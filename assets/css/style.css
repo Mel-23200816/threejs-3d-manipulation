@@ -2,126 +2,17 @@ body {
     margin: 0;
     background-color: #000;
     color: #fff;
-    font-family: Monospace;
+    font-family: Monospace, sans-serif;
     font-size: 13px;
     line-height: 24px;
     overscroll-behavior: none;
-    overflow: hidden; /* Mantiene el canvas sin scroll */
+    overflow: hidden; 
 }
 
-a {
-    color: #ff0;
-    text-decoration: none;
-}
+a { color: #00c3ff; text-decoration: none; }
+a:hover { text-decoration: underline; }
 
-a:hover {
-    text-decoration: underline;
-}
-
-button {
-    cursor: pointer;
-    text-transform: uppercase;
-}
-
-/* Aplicamos el diseño original de #info a todos los overlays de texto */
-#info, .info-overlay {
-    position: absolute;
-    top: 0px;
-    width: 100%;
-    padding: 10px;
-    box-sizing: border-box;
-    text-align: center;
-    -moz-user-select: none;
-    -webkit-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-    pointer-events: none;
-    z-index: 1; 
-    display: none; /* Se ocultan por defecto hasta que JS los active */
-}
-
-a, button, input, select {
-    pointer-events: auto;
-}
-
-.lil-gui {
-    z-index: 2 !important; 
-}
-
-@media all and ( max-width: 640px ) {
-    .lil-gui.root { 
-        right: auto;
-        top: auto;
-        max-height: 50%;
-        max-width: 80%;
-        bottom: 0;
-        left: 0;
-    }
-}
-
-#overlay {
-    position: absolute;
-    font-size: 16px;
-    z-index: 2;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    background: rgba(0,0,0,0.7);
-}
-
-#overlay button {
-    background: transparent;
-    border: 0;
-    border: 1px solid rgb(255, 255, 255);
-    border-radius: 4px;
-    color: #ffffff;
-    padding: 12px 18px;
-    text-transform: uppercase;
-    cursor: pointer;
-}
-
-#notSupported {
-    width: 50%;
-    margin: auto;
-    background-color: #f00;
-    margin-top: 20px;
-    padding: 10px;
-}
-
-/* --- ESTILOS DE LA INTERFAZ DE NAVEGACIÓN Y ESCENAS --- */
-
-#nav { 
-    position: absolute; 
-    bottom: 20px; /* Movido abajo para que no estorbe el texto del #info superior */
-    left: 50%; 
-    transform: translateX(-50%); 
-    z-index: 100; 
-    display: flex; 
-    gap: 10px; 
-    background: rgba(0,0,0,0.8); 
-    padding: 10px; 
-    border-radius: 8px; 
-    border: 1px solid rgb(255, 255, 255);
-}
-
-#nav button { 
-    background: transparent;
-    border: 1px solid rgb(255, 255, 255);
-    color: #ffffff;
-    border-radius: 4px; 
-    padding: 8px 15px; 
-    font-family: Monospace;
-}
-
-#nav button:hover { 
-    background: rgba(255,255,255,0.2); 
-}
-
+/* Contenedores de renderizado */
 .scene-container { 
     display: none; 
     width: 100vw; 
@@ -129,20 +20,80 @@ a, button, input, select {
     position: absolute; 
     top: 0; 
     left: 0; 
+    z-index: 0; /* Al fondo */
+}
+.scene-container.active { display: block; }
+
+/* Overlays de información de Three.js */
+#info, .info-overlay {
+    position: absolute;
+    top: 80px; /* Bajamos el texto para que no choque con la Navbar */
+    width: 100%;
+    padding: 10px;
+    box-sizing: border-box;
+    text-align: center;
+    pointer-events: none;
+    z-index: 10; 
+    display: none; 
+    text-shadow: 1px 1px 3px #000; /* Mejor lectura sobre fondos claros */
 }
 
-.scene-container.active { 
-    display: block; 
+/* Efecto Glassmorphism para Navbar y Footer */
+.glass-panel {
+    background: rgba(18, 20, 24, 0.7) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.glass-footer {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: none;
 }
 
-/* Estilos específicos de PointerLock */
+/* --- ESTILO DE BOTONES UIVERSE (Neón / Cyber) --- */
+.uiverse-btn {
+    padding: 0.6em 1.2em;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 6px;
+    color: #fff;
+    background: transparent;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.uiverse-btn:hover {
+    color: #fff;
+    border-color: #00c3ff;
+    box-shadow: 0 0 10px rgba(0, 195, 255, 0.5), inset 0 0 10px rgba(0, 195, 255, 0.3);
+    transform: translateY(-2px);
+}
+
+.uiverse-btn.active {
+    background: #00c3ff;
+    color: #000;
+    border-color: #00c3ff;
+    box-shadow: 0 0 15px rgba(0, 195, 255, 0.8);
+}
+
+/* Menú lateral (lil-gui) */
+.lil-gui { z-index: 50 !important; }
+
+/* PointerLock Blocker - Debe cubrir toda la pantalla por encima de la navbar */
+/* PointerLock Blocker - Ahora respeta la Navbar de Bootstrap */
 #blocker { 
     position: absolute; 
     width: 100%; 
     height: 100%; 
-    background-color: rgba(0,0,0,0.5); 
+    background-color: rgba(0,0,0,0.7); 
     display: none; 
-    z-index: 50; 
+    z-index: 1000; /* Menor que el 1030 de la Navbar de Bootstrap */
 }
 
 #instructions { 
@@ -153,7 +104,6 @@ a, button, input, select {
     justify-content: center; 
     align-items: center; 
     text-align: center; 
-    font-size: 14px; 
     cursor: pointer; 
     color: white; 
     pointer-events: auto;

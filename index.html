@@ -1,11 +1,14 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-    <title>Three.js - Entorno de Escenas</title>
+    <title>Three.js - Laboratorio 3D</title>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     
-    <!-- Todo el CSS consolidado aquí -->
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- CSS Propio -->
     <link type="text/css" rel="stylesheet" href="./assets/css/style.css">
     <link rel="icon" type="image/png" href="./assets/img/favicon.png">
 </head>
@@ -20,34 +23,55 @@
         }
     </script>
 
-    <!-- Interfaz de Navegación (Orden Actualizado) -->
-    <div id="nav">
-        <button onclick="showScene('minecraft')">Minecraft</button>
-        <button onclick="showScene('map')">Map Controls</button>
-        <button onclick="showScene('orbit')">Orbit Controls</button>
-        <button onclick="showScene('pointerlock')">Pointer Lock</button>
-        <button onclick="showScene('transform')">Transform</button>
-    </div>
+    <!-- Navbar con Bootstrap y Glassmorphism -->
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top glass-panel px-3">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="#" style="letter-spacing: 2px;">
+                <span style="color: #00c3ff;">THREE</span>.JS DEMOS
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+                <div class="d-flex flex-wrap gap-2 mt-2 mt-lg-0" id="nav-buttons">
+                    <button class="uiverse-btn active" onclick="showScene('minecraft', this)">Minecraft</button>
+                    <button class="uiverse-btn" onclick="showScene('map', this)">Map Controls</button>
+                    <button class="uiverse-btn" onclick="showScene('orbit', this)">Orbit Controls</button>
+                    <button class="uiverse-btn" onclick="showScene('pointerlock', this)">Parkour</button>
+                    <button class="uiverse-btn" onclick="showScene('transform', this)">Transform</button>
+                </div>
+            </div>
+        </div>
+    </nav>
 
     <!-- Overlays de Información -->
     <div id="info-minecraft" class="info-overlay">
-        <a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> - <a href="http://www.minecraft.net/" target="_blank" rel="noopener">minecraft</a> demo.<br />(left click: forward, right click: backward)
+        <strong>Modo Libre (Minecraft Demo)</strong><br />
+        (Clic Izquierdo: Avanzar, Clic Derecho: Retroceder | Ratón: Mirar)
     </div>
 
     <div id="info-map" class="info-overlay">
-        <a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> - map controls <br>
+        <strong>Map Controls Interactivos</strong><br>
         Clic y Arrastrar: Mover figuras<br>
         Mantener <strong>"H"</strong> + Arrastrar: Cambiar Altura | Mantener <strong>"W"</strong> + Arrastrar: Cambiar Ancho
     </div>
     
     <div id="info-orbit" class="info-overlay">
-        <a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> - orbit controls
+        <strong>Orbit Controls - Generador Procedural</strong><br>
+        (Clic Izquierdo: Rotar | Clic Derecho: Desplazar | Rueda: Zoom)
     </div>
-    
+
+    <!-- Blocker para PointerLock (Debe cubrir toda la pantalla) -->
     <div id="blocker">
         <div id="instructions">
-            <p style="font-size:36px">Click to play</p>
-            <p>Move: WASD<br/>Jump: SPACE<br/>Look: MOUSE</p>
+            <p style="font-size:36px; font-weight:bold; letter-spacing: 2px; color: #00c3ff;">CLICK PARA JUGAR</p>
+            <p style="font-family: 'Segoe UI', sans-serif; font-size: 18px;">
+                Moverse: W A S D<br/>
+                Saltar: ESPACIO<br/>
+                Mirar: RATÓN
+            </p>
         </div>
     </div>
 
@@ -58,38 +82,53 @@
         "Esc" Resetear transformación | "C" Alternar cámara | "V" Zoom aleatorio
     </div>
 
-    <!-- Contenedores de renderizado -->
+    <!-- Contenedores de renderizado WebGL -->
     <div id="container-minecraft" class="scene-container active"></div>
     <div id="container-map" class="scene-container"></div>
     <div id="container-orbit" class="scene-container"></div>
     <div id="container-pointerlock" class="scene-container"></div>
     <div id="container-transform" class="scene-container"></div>
 
+    <!-- Footer con credenciales y Glassmorphism -->
+    <footer class="fixed-bottom text-center py-2 glass-panel glass-footer">
+        <small class="text-white-50" style="font-family: 'Segoe UI', sans-serif;">
+            Desarrollado por <strong class="text-white">Miguel Angel Cano Alejandro</strong> <br>
+            <span style="color: #00c3ff;">Ingeniería en Sistemas Computacionales (6to Semestre)</span> | Instituto Tecnológico de Pachuca
+        </small>
+    </footer>
+
     <!-- Lógica para el cambio de escenas -->
     <script>
-        function showScene(id) {
-            // Ocultar todos los contenedores y los overlays de info
+        function showScene(id, btnElement) {
+            // 1. Ocultar todos los contenedores y overlays
             document.querySelectorAll('.scene-container').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.info-overlay').forEach(el => el.style.display = 'none');
             document.getElementById('blocker').style.display = 'none';
 
-            // Mostrar el contenedor seleccionado
-            document.getElementById('container-' + id).classList.add('active');
+            // 2. Quitar clase active de todos los botones
+            document.querySelectorAll('.uiverse-btn').forEach(btn => btn.classList.remove('active'));
             
-            // Mostrar los textos / blockers si corresponden a la escena
+            // 3. Activar la escena seleccionada y su botón
+            document.getElementById('container-' + id).classList.add('active');
+            if(btnElement) btnElement.classList.add('active');
+            
+            // 4. Mostrar los textos o bloqueadores si corresponden
             if(document.getElementById('info-' + id)) {
                 document.getElementById('info-' + id).style.display = 'block';
             }
             if(id === 'pointerlock') {
-                document.getElementById('blocker').style.display = 'block';
+                document.getElementById('blocker').style.display = 'flex';
             }
         }
         
         // Iniciar con la escena de Minecraft por defecto
-        showScene('minecraft');
+        showScene('minecraft', document.querySelector('.uiverse-btn'));
     </script>
 
-    <!-- Scripts de Three.js (Orden Actualizado) -->
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Scripts de Three.js -->
     <script type="module" src="./assets/js/minecraft.js"></script>
     <script type="module" src="./assets/js/mapControls.js"></script>
     <script type="module" src="./assets/js/orbitControls.js"></script>
